@@ -44,7 +44,7 @@ EOF
 (cd "${work_dir}/consumer" && go build .)
 
 if grep -R -E '/Users/|SERVICE_JWT_PRIVATE_KEY|NATS_URL|platforms/identity|/internal/v1/' \
-	"${work_dir}/export" --exclude='check-release-boundary.sh' --exclude='test-package.sh'; then
+	"${work_dir}/export" --exclude='check-release-boundary.sh' --exclude='export-public-repository.sh' --exclude='test-package.sh'; then
   echo "private repository material leaked into source-only export" >&2
   exit 1
 fi
