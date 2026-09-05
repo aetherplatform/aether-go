@@ -136,6 +136,11 @@ func (generator *generator) generate() ([]byte, error) {
 			operation.ID, operation.ID, methodConstant(operation.Method), operation.Path, idempotencyConstant(operation.Idempotency), operation.SuccessStatuses)
 	}
 	fmt.Fprintln(&output, ")")
+	fmt.Fprintln(&output, "\nvar allOperations = []transport.Operation{")
+	for _, operation := range operations {
+		fmt.Fprintf(&output, "\t%sOperation,\n", operation.ID)
+	}
+	fmt.Fprintln(&output, "}")
 
 	for _, operation := range operations {
 		if err := generator.emitMethod(&output, operation); err != nil {
@@ -143,6 +148,7 @@ func (generator *generator) generate() ([]byte, error) {
 		}
 	}
 	fmt.Fprintln(&output, "func setString(query url.Values, name string, value *string) { if value != nil { query.Set(name, *value) } }")
+	fmt.Fprintln(&output, "func setInteger(query url.Values, name string, value *int64) { if value != nil { query.Set(name, strconv.FormatInt(*value, 10)) } }")
 	fmt.Fprintln(&output, "func setTime(query url.Values, name string, value *time.Time) { if value != nil { query.Set(name, value.Format(time.RFC3339)) } }")
 
 	formatted, err := format.Source(output.Bytes())
@@ -232,7 +238,7 @@ func (generator *generator) emitMethod(output *bytes.Buffer, operation operation
 		if err != nil {
 			return err
 		}
-		arguments = append(arguments, lowerFirst(goName(parameter.Name))+" "+typeName)
+		arguments = append(arguments, parameterVariable(parameter.Name)+" "+typeName)
 	}
 	requestType := ""
 	if operation.Request != nil {
@@ -267,7 +273,11 @@ func (generator *generator) emitMethod(output *bytes.Buffer, operation operation
 	if len(operation.PathParameters) > 0 {
 		fmt.Fprintln(output, "\tpath := map[string]string{")
 		for _, parameter := range operation.PathParameters {
-			fmt.Fprintf(output, "\t\t%q: string(%s),\n", parameter.Name, lowerFirst(goName(parameter.Name)))
+			expression, err := pathValueExpression(parameter)
+			if err != nil {
+				return err
+			}
+			fmt.Fprintf(output, "\t\t%q: %s,\n", parameter.Name, expression)
 		}
 		fmt.Fprintln(output, "\t}")
 	} else {
@@ -524,8 +534,11 @@ func flattenedProperties(value schema) (map[string]schema, map[string]struct{}, 
 				return nil, nil, err
 			}
 			for name, property := range variantProperties {
-				if _, exists := properties[name]; exists {
-					return nil, nil, fmt.Errorf("duplicate allOf property %s", name)
+				if existing, exists := properties[name]; exists {
+					if canonical(existing) != canonical(property) {
+						return nil, nil, fmt.Errorf("conflicting allOf property %s", name)
+					}
+					continue
 				}
 				properties[name] = property
 			}
@@ -743,10 +756,45 @@ func lowerFirst(value string) string {
 	if value == "" {
 		return value
 	}
+	if value == "ID" {
+		return "id"
+	}
 	if strings.HasSuffix(value, "ID") {
 		return strings.ToLower(value[:len(value)-2]) + "ID"
 	}
 	return strings.ToLower(value[:1]) + value[1:]
+}
+
+func parameterVariable(value string) string {
+	name := lowerFirst(goName(value))
+	if goKeywords[name] {
+		return name + "Value"
+	}
+	return name
+}
+
+func pathValueExpression(parameter parameter) (string, error) {
+	value := parameterVariable(parameter.Name)
+	switch primitiveType(parameter.Schema) {
+	case "string":
+		return "string(" + value + ")", nil
+	case "integer":
+		return "strconv.FormatInt(int64(" + value + "), 10)", nil
+	case "boolean":
+		return "strconv.FormatBool(bool(" + value + "))", nil
+	case "date-time":
+		return value + ".Format(time.RFC3339)", nil
+	default:
+		return "", fmt.Errorf("unsupported path parameter %s type %q", parameter.Name, primitiveType(parameter.Schema))
+	}
+}
+
+var goKeywords = map[string]bool{
+	"break": true, "default": true, "func": true, "interface": true, "select": true,
+	"case": true, "defer": true, "go": true, "map": true, "struct": true,
+	"chan": true, "else": true, "goto": true, "package": true, "switch": true,
+	"const": true, "fallthrough": true, "if": true, "range": true, "type": true,
+	"continue": true, "for": true, "import": true, "return": true, "var": true,
 }
 
 func pointerType(value string) string {

@@ -292,6 +292,27 @@ var (
 	searchObjectsOperation                   = transport.Operation{Name: "searchObjects", Method: http.MethodGet, Path: "/v1/storage/objects/search", Idempotency: transport.IdempotencyNotApplicable, SuccessStatuses: []int{200}}
 )
 
+var allOperations = []transport.Operation{
+	abortUploadOperation,
+	completeUploadOperation,
+	createAssetOperation,
+	createNamespaceOperation,
+	createObjectDownloadIntentOperation,
+	createObjectDownloadIntentByKeyOperation,
+	createUploadIntentOperation,
+	deleteAssetOperation,
+	deleteObjectOperation,
+	getAssetOperation,
+	getNamespaceOperation,
+	getNamespaceUsageOperation,
+	getObjectOperation,
+	listAssetVersionsOperation,
+	listNamespacesOperation,
+	resolveObjectOperation,
+	restoreObjectOperation,
+	searchObjectsOperation,
+}
+
 func (client *Client) AbortUpload(ctx context.Context, uploadID UploadID, options ...aether.RequestOption) (*AbortUploadResult, error) {
 	var query url.Values
 	path := map[string]string{
@@ -497,6 +518,11 @@ func (client *Client) SearchObjects(ctx context.Context, params SearchObjectsPar
 func setString(query url.Values, name string, value *string) {
 	if value != nil {
 		query.Set(name, *value)
+	}
+}
+func setInteger(query url.Values, name string, value *int64) {
+	if value != nil {
+		query.Set(name, strconv.FormatInt(*value, 10))
 	}
 }
 func setTime(query url.Values, name string, value *time.Time) {

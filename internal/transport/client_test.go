@@ -29,6 +29,22 @@ func (function roundTripFunc) RoundTrip(request *http.Request) (*http.Response, 
 	return function(request)
 }
 
+type contextAwareBody struct {
+	ctx  context.Context
+	body *strings.Reader
+}
+
+func (body *contextAwareBody) Read(buffer []byte) (int, error) {
+	select {
+	case <-body.ctx.Done():
+		return 0, body.ctx.Err()
+	default:
+		return body.body.Read(buffer)
+	}
+}
+
+func (*contextAwareBody) Close() error { return nil }
+
 func (provider *testTokenProvider) Token(context.Context) (AccessToken, error) {
 	provider.mu.Lock()
 	defer provider.mu.Unlock()
@@ -95,6 +111,31 @@ func TestClientDoesNotRefreshUnsafeMutation(t *testing.T) {
 	}
 	if requests != 1 || provider.invalidated != 0 {
 		t.Fatalf("unsafe mutation retried: requests=%d invalidations=%d", requests, provider.invalidated)
+	}
+}
+
+func TestClientKeepsRequestContextAliveWhileReadingResponse(t *testing.T) {
+	t.Parallel()
+	provider := &testTokenProvider{tokens: []string{"token"}}
+	httpClient := &http.Client{Transport: roundTripFunc(func(request *http.Request) (*http.Response, error) {
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			Header:     make(http.Header),
+			Body:       &contextAwareBody{ctx: request.Context(), body: strings.NewReader(`{"ok":true}`)},
+		}, nil
+	})}
+	client, err := NewClient(Config{BaseURL: "https://api.useather.test", TokenProvider: provider, HTTPClient: httpClient}, "test-agent")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var result struct {
+		OK bool `json:"ok"`
+	}
+	if err := client.Execute(context.Background(), Operation{Name: "read", Method: http.MethodGet, Path: "/resource", SuccessStatuses: []int{200}}, nil, nil, nil, &result); err != nil {
+		t.Fatal(err)
+	}
+	if !result.OK {
+		t.Fatal("response body was not decoded")
 	}
 }
 

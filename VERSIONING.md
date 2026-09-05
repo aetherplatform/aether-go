@@ -10,10 +10,10 @@ support goes to `support@useather.co`.
 ## Public Boundary
 
 The first beta contains Core, the server-only client-credentials package, and
-the 18 Storage operations explicitly classified as public. Operator routes,
-service-JWT signing, NATS contracts, deployment configuration, and backend
-source remain private. Identity, Events, Notifications, and Webhooks require
-separate customer-contract approval before publication.
+the approved public contracts for Identity, Events, Notifications, Storage,
+and Webhooks. Operator and partner-private routes, hosted Identity forms,
+internal native authentication, service-JWT signing, NATS contracts,
+deployment configuration, and backend source remain private.
 
 ## Go Support
 
@@ -46,12 +46,14 @@ pushing the commit and tag, and allowing Go tooling or a module proxy to
 discover the repository.
 
 Release Please prepares version and changelog changes. The protected release
-workflow runs Go 1.27.1 certification and the hosted Storage proof before it may
-create later tags. The one-time bootstrap workflow creates `v0.1.0-beta.1`
-only when `AETHER_GO_SDK_BOOTSTRAP_RELEASE_ENABLED=true`. After verification,
-the bootstrap switch is disabled and `AETHER_GO_SDK_RELEASE_ENABLED=true`
-enables reviewed Release Please updates. Both switches remain unset or false
-until the hosted sandbox credentials and namespace are configured.
+workflow runs Go 1.27.1 certification and the hosted Identity, Events,
+Notifications, Storage, and Webhooks proof before it may create later tags.
+The one-time bootstrap workflow creates `v0.1.0-beta.1` only when
+`AETHER_GO_SDK_BOOTSTRAP_RELEASE_ENABLED=true`. After verification, the
+bootstrap switch is disabled and `AETHER_GO_SDK_RELEASE_ENABLED=true` enables
+reviewed Release Please updates. Both switches remain unset or false until all
+hosted sandbox endpoints, credentials, audiences, and the Storage namespace
+are configured.
 
 After release, a clean external project must successfully run:
 

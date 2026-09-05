@@ -115,7 +115,7 @@ func (client *Client) Execute(
 			return &Error{Code: "invalid_access_token", Message: "Token provider returned an empty access token", Attempts: attempt}
 		}
 
-		response, sendErr := client.send(ctx, operation, requestURL, requestBody, token.Value, requestID, options, attempt)
+		response, requestContext, cancelRequest, sendErr := client.send(ctx, operation, requestURL, requestBody, token.Value, requestID, options, attempt)
 		if sendErr != nil {
 			if !retrySafe || attempt > client.maxRetries || !Retryable(sendErr) {
 				return sendErr
@@ -129,7 +129,15 @@ func (client *Client) Execute(
 
 		responseBody, readErr := io.ReadAll(response.Body)
 		response.Body.Close()
+		requestContextErr := requestContext.Err()
+		cancelRequest()
 		if readErr != nil {
+			if ctx.Err() != nil {
+				return abortedError(ctx.Err(), attempt)
+			}
+			if errors.Is(requestContextErr, context.DeadlineExceeded) {
+				return &Error{StatusCode: response.StatusCode, Code: "request_timeout", Message: "Aether request timed out", RequestID: response.Header.Get("x-request-id"), Attempts: attempt, Cause: readErr}
+			}
 			return &Error{StatusCode: response.StatusCode, Code: "response_read_failed", Message: "Failed to read Aether response", RequestID: response.Header.Get("x-request-id"), Attempts: attempt, Cause: readErr}
 		}
 		if successStatus(operation.SuccessStatuses, response.StatusCode) {
@@ -173,21 +181,20 @@ func (client *Client) send(
 	requestID string,
 	options RequestOptions,
 	attempt int,
-) (*http.Response, *Error) {
+) (*http.Response, context.Context, context.CancelFunc, *Error) {
 	requestContext := ctx
 	cancel := func() {}
 	if client.timeout > 0 {
 		requestContext, cancel = context.WithTimeout(ctx, client.timeout)
 	}
-	defer cancel()
-
 	var reader io.Reader
 	if body != nil {
 		reader = bytes.NewReader(body)
 	}
 	request, err := http.NewRequestWithContext(requestContext, operation.Method, requestURL, reader)
 	if err != nil {
-		return nil, &Error{Code: "request_build_failed", Message: "Failed to build Aether request", RequestID: requestID, Attempts: attempt, Cause: err}
+		cancel()
+		return nil, requestContext, func() {}, &Error{Code: "request_build_failed", Message: "Failed to build Aether request", RequestID: requestID, Attempts: attempt, Cause: err}
 	}
 	request.Header.Set("accept", "application/json")
 	request.Header.Set("authorization", "Bearer "+token)
@@ -205,15 +212,16 @@ func (client *Client) send(
 
 	response, err := client.httpClient.Do(request)
 	if err == nil {
-		return response, nil
+		return response, requestContext, cancel, nil
 	}
+	cancel()
 	if errors.Is(ctx.Err(), context.Canceled) {
-		return nil, abortedError(ctx.Err(), attempt)
+		return nil, requestContext, func() {}, abortedError(ctx.Err(), attempt)
 	}
 	if errors.Is(requestContext.Err(), context.DeadlineExceeded) {
-		return nil, &Error{Code: "request_timeout", Message: "Aether request timed out", RequestID: requestID, Attempts: attempt, Cause: err}
+		return nil, requestContext, func() {}, &Error{Code: "request_timeout", Message: "Aether request timed out", RequestID: requestID, Attempts: attempt, Cause: err}
 	}
-	return nil, &Error{Code: "network_error", Message: "Aether request failed", RequestID: requestID, Attempts: attempt, Cause: err}
+	return nil, requestContext, func() {}, &Error{Code: "network_error", Message: "Aether request failed", RequestID: requestID, Attempts: attempt, Cause: err}
 }
 
 func (client *Client) waitForRetry(ctx context.Context, operation string, attempt int, requestErr *Error, requestID string) {

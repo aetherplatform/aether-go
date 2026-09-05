@@ -1,8 +1,8 @@
 # Aether Go SDK Preview
 
 The Aether Go SDK provides typed access to Aether's public APIs. The first
-public beta contains the shared Core runtime and the 18 Storage operations
-explicitly approved by Aether's public route inventory.
+public beta contains the shared Core runtime plus the approved Identity,
+Events, Notifications, Storage, and Webhooks public contracts.
 
 ```bash
 go get github.com/aetherplatform/aether-go@v0.1.0-beta.1
@@ -10,6 +10,17 @@ go get github.com/aetherplatform/aether-go@v0.1.0-beta.1
 
 The module supports Go 1.26 and Go 1.27. Release certification uses Go 1.27.1.
 Runtime packages use only the Go standard library.
+
+## Packages
+
+- `identity` — OAuth/OIDC discovery, PKCE authorization URLs, userinfo, and
+  server-only confidential-client token, revocation, and introspection calls.
+- `events` — three read-only catalog and governed-schema operations.
+- `notifications` — 29 customer-facing send, template, broadcast, campaign,
+  analytics, and email-configuration operations.
+- `storage` — 18 namespace, asset, upload, object, and transfer operations.
+- `webhooks` — 19 subscription, delivery, and inbound-endpoint operations plus
+  constant-time outbound signature verification.
 
 ## Quick Start
 
@@ -73,6 +84,11 @@ client credentials live in the server-only `clientcredentials` package, which
 is excluded from `GOOS=js` builds. Never compile client secrets into browser or
 mobile applications.
 
+Identity confidential-client helpers are also excluded from `GOOS=js` builds.
+Hosted browser login remains browser-driven; the SDK builds an Authorization
+Code with PKCE URL but never accepts a principal ID or substitutes a browser
+cookie for an API bearer token.
+
 Requested capabilities are sent through OAuth's `scope` field, but the SDK does
 not interpret them as proof of authorization. The access token and Aether
 enforcement point remain authoritative.
@@ -108,3 +124,9 @@ The one-time `bootstrap-release.yml` workflow creates the first immutable beta
 tag only when `AETHER_GO_SDK_BOOTSTRAP_RELEASE_ENABLED=true`. After that tag is
 verified, disable the bootstrap switch and enable
 `AETHER_GO_SDK_RELEASE_ENABLED=true` for reviewed Release Please updates.
+
+Hosted certification requires explicit Identity, Events, Notifications,
+Storage, and Webhooks base URLs and audiences, one sandbox confidential client,
+and a disposable Storage namespace. The release workflows pass those values
+only from the protected `sdk-sandbox` GitHub environment. No hosted credential
+is stored in this repository.

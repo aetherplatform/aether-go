@@ -27,7 +27,11 @@ import (
 
 	"github.com/aetherplatform/aether-go"
 	"github.com/aetherplatform/aether-go/clientcredentials"
+	"github.com/aetherplatform/aether-go/events"
+	"github.com/aetherplatform/aether-go/identity"
+	"github.com/aetherplatform/aether-go/notifications"
 	"github.com/aetherplatform/aether-go/storage"
+	"github.com/aetherplatform/aether-go/webhooks"
 )
 
 func main() {
@@ -37,6 +41,11 @@ func main() {
 	})
 	client, _ := storage.NewClient(aether.Config{BaseURL: "https://api.useather.test", TokenProvider: provider})
 	_, _ = client.GetObject(context.Background(), storage.ObjectID("obj_example"))
+	_, _ = events.NewClient(aether.Config{BaseURL: "https://api.useather.test", TokenProvider: provider})
+	_, _ = notifications.NewClient(aether.Config{BaseURL: "https://api.useather.test", TokenProvider: provider})
+	_, _ = webhooks.NewClient(aether.Config{BaseURL: "https://api.useather.test", TokenProvider: provider})
+	identityClient, _ := identity.NewClient(identity.Config{BaseURL: "https://auth.useather.test"})
+	_, _ = identityClient.AuthorizationURL(identity.AuthorizationRequest{ClientID: "client", RedirectURI: "https://example.com/callback", Scope: "openid", State: "state", CodeChallenge: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"})
 }
 EOF
 

@@ -23,8 +23,12 @@ rsync -a \
 if [[ ! -f "${SDK_ROOT}/contracts/openapi/storage.json" ]]; then
   AETHER_ROOT="$(cd "${SDK_ROOT}/../.." && pwd)"
   mkdir -p "${output}/contracts/openapi" "${output}/contracts/sdk/v1"
-  ruby "${AETHER_ROOT}/scripts/openapi_contracts.rb" bundle storage "${output}/contracts/openapi/storage.json" >/dev/null
+  for platform in events identity notifications storage webhooks; do
+    ruby "${AETHER_ROOT}/scripts/openapi_contracts.rb" bundle "${platform}" "${output}/contracts/openapi/${platform}.json" >/dev/null
+  done
   cp "${AETHER_ROOT}"/contracts/sdk/v1/*.json "${output}/contracts/sdk/v1/"
+  mkdir -p "${output}/contracts/webhooks/signatures/v1"
+  cp "${AETHER_ROOT}/contracts/webhooks/signatures/v1/vectors.json" "${output}/contracts/webhooks/signatures/v1/vectors.json"
   cp "${AETHER_ROOT}/docs/go-sdk-versioning-and-release-policy.md" "${output}/VERSIONING.md"
 fi
 
