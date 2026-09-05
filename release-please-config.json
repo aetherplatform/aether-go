@@ -1,0 +1,12 @@
+{
+  "packages": {
+    ".": {
+      "release-type": "go",
+      "package-name": "aether-go",
+      "include-v-in-tag": true,
+      "prerelease": true,
+      "prerelease-type": "beta",
+      "changelog-path": "CHANGELOG.md"
+    }
+  }
+}

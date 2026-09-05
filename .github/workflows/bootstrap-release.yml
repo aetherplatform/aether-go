@@ -1,0 +1,44 @@
+name: Bootstrap Go SDK Release
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: go-sdk-bootstrap-release
+  cancel-in-progress: false
+
+jobs:
+  bootstrap:
+    if: vars.AETHER_GO_SDK_BOOTSTRAP_RELEASE_ENABLED == 'true' && vars.AETHER_GO_SDK_RELEASE_ENABLED != 'true'
+    runs-on: ubuntu-latest
+    environment: sdk-sandbox
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-go@v6
+        with:
+          go-version: "1.27.1"
+          cache: true
+      - run: go install honnef.co/go/tools/cmd/staticcheck@v0.8.1
+      - run: go install golang.org/x/vuln/cmd/govulncheck@v1.7.0
+      - run: bash scripts/certify.sh
+      - run: bash scripts/test-hosted-sandbox.sh
+        env:
+          AETHER_SDK_SANDBOX_TOKEN_URL: ${{ vars.AETHER_SDK_SANDBOX_TOKEN_URL }}
+          AETHER_SDK_SANDBOX_STORAGE_URL: ${{ vars.AETHER_SDK_SANDBOX_STORAGE_URL }}
+          AETHER_SDK_SANDBOX_NAMESPACE_ID: ${{ vars.AETHER_SDK_SANDBOX_NAMESPACE_ID }}
+          AETHER_SDK_SANDBOX_CLIENT_ID: ${{ secrets.AETHER_SDK_SANDBOX_CLIENT_ID }}
+          AETHER_SDK_SANDBOX_CLIENT_SECRET: ${{ secrets.AETHER_SDK_SANDBOX_CLIENT_SECRET }}
+      - name: Create immutable first beta tag
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          test "$(git tag --list v0.1.0-beta.1)" = ""
+          test "$(grep -c 'const Version = "0.1.0-beta.1"' version.go)" = "1"
+          git tag -a v0.1.0-beta.1 -m "Aether Go SDK v0.1.0-beta.1"
+          git push origin v0.1.0-beta.1
+          gh release create v0.1.0-beta.1 --verify-tag --prerelease --generate-notes --title "Aether Go SDK v0.1.0-beta.1"
