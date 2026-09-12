@@ -4,8 +4,8 @@ Status: locked for the initial public beta
 
 The public module is `github.com/aetherplatform/aether-go`, published from the
 `aetherplatform/aether-go` repository under Apache License 2.0. `Aether` is the
-public publisher name. Security reports go to `security@useather.co`; SDK
-support goes to `support@useather.co`.
+public publisher name. Security reports go to `security@useaether.co`; SDK
+support goes to `support@useaether.co`.
 
 ## Public Boundary
 
@@ -20,6 +20,12 @@ deployment configuration, and backend source remain private.
 The module declares Go 1.26 compatibility and is continuously tested on Go
 1.26 and Go 1.27.1. Generation, security analysis, hosted certification, and
 release jobs use Go 1.27.1. Go 1.26 support is reevaluated before `1.0.0`.
+
+Consumers must use patched toolchains: at least Go 1.26.6 on the 1.26 line or
+Go 1.27.1 on the 1.27 line as of 2026-09-12. The language directive in `go.mod`
+is a compatibility floor, not a recommendation to use an outdated patch
+release. Keep current with Go security updates and rebuild applications to
+incorporate standard-library fixes.
 
 ## Semantic Versioning
 

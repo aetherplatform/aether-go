@@ -23,6 +23,48 @@ func response(status int, body string) *http.Response {
 	return &http.Response{StatusCode: status, Header: make(http.Header), Body: io.NopCloser(strings.NewReader(body))}
 }
 
+func TestRetryConfiguration(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		name     string
+		max      int
+		disabled bool
+		want     int64
+	}{
+		{"default", 0, false, 2}, {"explicit", 2, false, 3},
+		{"disabled", 0, true, 1}, {"disabled overrides positive", 3, true, 1},
+		{"negative remains invalid", -1, true, 0},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			var calls atomic.Int64
+			provider, err := New(Config{
+				TokenURL: "https://auth.example/oauth/token", ClientID: "client", ClientSecret: "secret",
+				Audience: "aether-storage", Capabilities: []string{"storage:*"},
+				MaxRetries: test.max, DisableRetries: test.disabled,
+				HTTPClient: &http.Client{Transport: roundTripFunc(func(*http.Request) (*http.Response, error) {
+					calls.Add(1)
+					result := response(http.StatusServiceUnavailable, `{}`)
+					result.Header.Set("Retry-After", "0")
+					return result, nil
+				})},
+			})
+			if test.want == 0 {
+				if err == nil {
+					t.Fatal("negative retries accepted")
+				}
+				return
+			}
+			if err != nil {
+				t.Fatal(err)
+			}
+			_, err = provider.Token(context.Background())
+			if err == nil || calls.Load() != test.want {
+				t.Fatalf("error=%v calls=%d, want %d", err, calls.Load(), test.want)
+			}
+		})
+	}
+}
+
 func TestProviderCoalescesAndCachesTokenRequests(t *testing.T) {
 	t.Parallel()
 	var requests atomic.Int64

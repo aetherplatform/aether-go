@@ -20,6 +20,46 @@ func (function roundTripFunc) RoundTrip(request *http.Request) (*http.Response, 
 	return function(request)
 }
 
+func TestRetryConfiguration(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		name     string
+		max      int
+		disabled bool
+		want     int
+	}{
+		{"default", 0, false, 3}, {"explicit", 1, false, 2},
+		{"disabled", 0, true, 1}, {"disabled overrides positive", 3, true, 1},
+		{"negative remains invalid", -1, true, 0},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			calls := 0
+			client, err := NewClient(Config{
+				BaseURL: "https://auth.example", MaxRetries: test.max, DisableRetries: test.disabled,
+				HTTPClient: &http.Client{Transport: roundTripFunc(func(*http.Request) (*http.Response, error) {
+					calls++
+					result := identityResponse(http.StatusServiceUnavailable, `{}`)
+					result.Header.Set("Retry-After", "0")
+					return result, nil
+				})},
+			})
+			if test.want == 0 {
+				if err == nil {
+					t.Fatal("negative retries accepted")
+				}
+				return
+			}
+			if err != nil {
+				t.Fatal(err)
+			}
+			_, err = client.GetOpenIDConfiguration(context.Background())
+			if err == nil || calls != test.want {
+				t.Fatalf("error=%v calls=%d, want %d", err, calls, test.want)
+			}
+		})
+	}
+}
+
 type rotatingTokenProvider struct {
 	mu          sync.Mutex
 	tokens      []string

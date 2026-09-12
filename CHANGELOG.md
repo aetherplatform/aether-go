@@ -4,6 +4,17 @@ All notable customer-visible changes are recorded here.
 
 ## 0.1.0-beta.1
 
+Pending the first version tag.
+
+### Fixed
+
+- Retry webhook event publishing only with a nonblank body idempotency key;
+  generate the retry-safety binding from the public contract.
+- Add `DisableRetries` to API, Identity, and client-credentials configuration
+  while preserving the existing zero-value defaults.
+- Correct sandbox URLs and support contacts, document installation before the
+  first tag, and synchronize the exported transport fixtures.
+
 ### Added
 
 - Standard-library Core transport with typed errors and bounded retries.

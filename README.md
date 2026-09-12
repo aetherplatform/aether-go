@@ -4,12 +4,22 @@ The Aether Go SDK provides typed access to Aether's public APIs. The first
 public beta contains the shared Core runtime plus the approved Identity,
 Events, Notifications, Storage, and Webhooks public contracts.
 
+The first named beta tag has not been published yet. Until then, install the
+public preview from `main` (Go records the resolved immutable pseudo-version
+in your `go.mod`):
+
 ```bash
-go get github.com/aetherplatform/aether-go@v0.1.0-beta.1
+go get github.com/aetherplatform/aether-go@main
 ```
 
-The module supports Go 1.26 and Go 1.27. Release certification uses Go 1.27.1.
-Runtime packages use only the Go standard library.
+After the release workflow creates `v0.1.0-beta.1`, that tag can replace `main`
+in the command above.
+
+The module supports Go 1.26 and Go 1.27. Use Go 1.26.6 or newer on the 1.26
+line, or Go 1.27.1 or newer on the 1.27 line, and keep up with security patches.
+Release certification uses Go 1.27.1. Runtime packages use only the Go standard
+library; its security fixes reach your application when you rebuild with a
+patched Go toolchain.
 
 ## Packages
 
@@ -40,7 +50,7 @@ import (
 func main() {
 	ctx := context.Background()
 	tokens, err := clientcredentials.New(clientcredentials.Config{
-		TokenURL:     "https://sandbox.auth.useather.co/oauth/token",
+		TokenURL:     "https://auth-sandbox.useaether.co/oauth/token",
 		ClientID:     "your-client-id",
 		ClientSecret: "your-client-secret",
 		Audience:     "aether-storage",
@@ -55,7 +65,7 @@ func main() {
 	}
 
 	client, err := storage.NewClient(aether.Config{
-		BaseURL:      "https://sandbox.api.useather.co",
+		BaseURL:      "https://api-sandbox.useaether.co",
 		TokenProvider: tokens,
 	})
 	if err != nil {
@@ -104,6 +114,16 @@ when its public idempotency contract allows it.
 Client-credentials acquisition is independently bounded. Invalid credentials
 and non-transient 4xx responses fail immediately.
 
+`MaxRetries: 0` selects the default: two retries for API and Identity requests,
+one for client-credentials acquisition. To make exactly one attempt, set
+`DisableRetries: true` in `aether.Config`, `identity.Config`, or
+`clientcredentials.Config`. This overrides a non-negative `MaxRetries` value;
+negative values remain invalid. Configure the token provider separately from
+the API client when disabling both layers of retries.
+
+Webhook event publishing retries only when the request contains a nonblank
+`IdempotencyKey`. Missing, empty, and whitespace-only keys disable retries.
+
 ## Direct Storage Transfers
 
 Presigned upload and download requests intentionally use a separate,
@@ -117,8 +137,9 @@ order.
 ## Release Status
 
 The `0.x` line is a public preview without an SLA or zero-downtime compatibility
-promise. The first Git tag remains blocked until the hosted Storage sandbox
-proof succeeds. See `VERSIONING.md` in the exported public repository.
+promise. A named release requires passing certification and hosted sandbox
+proof for its candidate commit, followed by the protected release workflow.
+See `VERSIONING.md` in the exported public repository.
 
 The one-time `bootstrap-release.yml` workflow creates the first immutable beta
 tag only when `AETHER_GO_SDK_BOOTSTRAP_RELEASE_ENABLED=true`. After that tag is

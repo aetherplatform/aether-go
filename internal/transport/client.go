@@ -55,6 +55,9 @@ func NewClient(config Config, defaultAgent string) (*Client, error) {
 	if maxRetries < 0 {
 		return nil, fmt.Errorf("aether: maximum retries must not be negative")
 	}
+	if config.DisableRetries {
+		maxRetries = 0
+	}
 	userAgent := strings.TrimSpace(config.UserAgent)
 	if userAgent == "" {
 		userAgent = defaultAgent

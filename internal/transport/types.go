@@ -43,9 +43,12 @@ type Config struct {
 	TokenProvider TokenProvider
 	HTTPClient    *http.Client
 	Timeout       time.Duration
-	MaxRetries    int
-	UserAgent     string
-	OnRetry       func(RetryEvent)
+	// MaxRetries defaults to 2 when zero. Negative values are invalid.
+	MaxRetries int
+	// DisableRetries takes precedence over a non-negative MaxRetries value.
+	DisableRetries bool
+	UserAgent      string
+	OnRetry        func(RetryEvent)
 }
 
 type Error struct {
