@@ -4,7 +4,7 @@ All notable customer-visible changes are recorded here.
 
 ## 0.1.0-beta.1
 
-Pending the first version tag.
+Published 2026-09-12 as `v0.1.0-beta.1`.
 
 ### Fixed
 

@@ -4,16 +4,15 @@ The Aether Go SDK provides typed access to Aether's public APIs. The first
 public beta contains the shared Core runtime plus the approved Identity,
 Events, Notifications, Storage, and Webhooks public contracts.
 
-The first named beta tag has not been published yet. Until then, install the
-public preview from `main` (Go records the resolved immutable pseudo-version
-in your `go.mod`):
+The first public preview is available as the immutable `v0.1.0-beta.1` tag:
 
 ```bash
-go get github.com/aetherplatform/aether-go@main
+go get github.com/aetherplatform/aether-go@v0.1.0-beta.1
 ```
 
-After the release workflow creates `v0.1.0-beta.1`, that tag can replace `main`
-in the command above.
+Go resolves the module through its module proxy or Git repository and records
+its version and checksums in your project. No npm account or npm package is
+required.
 
 The module supports Go 1.26 and Go 1.27. Use Go 1.26.6 or newer on the 1.26
 line, or Go 1.27.1 or newer on the 1.27 line, and keep up with security patches.
