@@ -32,9 +32,12 @@ type Config struct {
 	Capabilities []string
 	HTTPClient   *http.Client
 	Timeout      time.Duration
-	MaxRetries   int
-	ExpirySkew   time.Duration
-	OnRetry      func(aether.RetryEvent)
+	// MaxRetries defaults to 1 when zero. Negative values are invalid.
+	MaxRetries int
+	// DisableRetries takes precedence over a non-negative MaxRetries value.
+	DisableRetries bool
+	ExpirySkew     time.Duration
+	OnRetry        func(aether.RetryEvent)
 }
 
 type Provider struct {
@@ -96,6 +99,9 @@ func New(config Config) (*Provider, error) {
 	}
 	if config.MaxRetries < 0 {
 		return nil, fmt.Errorf("aether: maximum retries must not be negative")
+	}
+	if config.DisableRetries {
+		config.MaxRetries = 0
 	}
 	if config.ExpirySkew == 0 {
 		config.ExpirySkew = defaultExpirySkew

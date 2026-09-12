@@ -103,6 +103,12 @@ func (generator *generator) generate() ([]byte, error) {
 	fmt.Fprintln(&output, "\t\"net/http\"")
 	fmt.Fprintln(&output, "\t\"net/url\"")
 	fmt.Fprintln(&output, "\t\"strconv\"")
+	for _, operation := range operations {
+		if operation.Idempotency == "request_field" {
+			fmt.Fprintln(&output, "\t\"strings\"")
+			break
+		}
+	}
 	fmt.Fprintln(&output, "\t\"time\"")
 	fmt.Fprintln(&output)
 	fmt.Fprintln(&output, "\t\"github.com/aetherplatform/aether-go\"")
@@ -132,8 +138,14 @@ func (generator *generator) generate() ([]byte, error) {
 	}
 	fmt.Fprintln(&output, "var (")
 	for _, operation := range operations {
-		fmt.Fprintf(&output, "\t%sOperation = transport.Operation{Name: %q, Method: %s, Path: %q, Idempotency: %s, SuccessStatuses: %#v}\n",
+		fmt.Fprintf(&output, "\t%sOperation = transport.Operation{Name: %q, Method: %s, Path: %q, Idempotency: %s, SuccessStatuses: %#v",
 			operation.ID, operation.ID, methodConstant(operation.Method), operation.Path, idempotencyConstant(operation.Idempotency), operation.SuccessStatuses)
+		if operation.Idempotency == "request_field" {
+			if err := generator.emitRequestRetrySafe(&output, operation); err != nil {
+				return nil, fmt.Errorf("operation %s: %w", operation.ID, err)
+			}
+		}
+		fmt.Fprintln(&output, "}")
 	}
 	fmt.Fprintln(&output, ")")
 	fmt.Fprintln(&output, "\nvar allOperations = []transport.Operation{")
@@ -156,6 +168,27 @@ func (generator *generator) generate() ([]byte, error) {
 		return nil, fmt.Errorf("format generated source: %w\n%s", err, output.String())
 	}
 	return formatted, nil
+}
+
+func (generator *generator) emitRequestRetrySafe(output *bytes.Buffer, operation operation) error {
+	properties, required, err := flattenedProperties(operation.Request)
+	if err != nil {
+		return err
+	}
+	key := properties["idempotency_key"]
+	if primitiveType(key) != "string" {
+		return fmt.Errorf("request_field requires a string idempotency_key property")
+	}
+	requestType, _, err := generator.goType(operation.Request, exported(operation.ID)+"Request", "")
+	if err != nil {
+		return err
+	}
+	check := "strings.TrimSpace(string(request.IdempotencyKey)) != \"\""
+	if _, isRequired := required["idempotency_key"]; !isRequired || isNullable(key) {
+		check = "request.IdempotencyKey != nil && strings.TrimSpace(string(*request.IdempotencyKey)) != \"\""
+	}
+	fmt.Fprintf(output, ", RequestRetrySafe: func(body any) bool { request, ok := body.(%s); return ok && %s }", requestType, check)
+	return nil
 }
 
 func (generator *generator) emitNamedSchema(output *bytes.Buffer, name string, value schema) error {

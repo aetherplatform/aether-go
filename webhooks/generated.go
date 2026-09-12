@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/aetherplatform/aether-go"
@@ -164,18 +165,21 @@ type ListWebhookSubscriptionsParams struct {
 }
 
 var (
-	bulkReplayWebhookDeliveriesOperation     = transport.Operation{Name: "bulkReplayWebhookDeliveries", Method: http.MethodPost, Path: "/v1/webhooks/bulk-replay", Idempotency: transport.IdempotencyUnsupported, SuccessStatuses: []int{202}}
-	createInboundEndpointOperation           = transport.Operation{Name: "createInboundEndpoint", Method: http.MethodPost, Path: "/v1/webhooks/inbound-endpoints", Idempotency: transport.IdempotencyUnsupported, SuccessStatuses: []int{201}}
-	createWebhookSubscriptionOperation       = transport.Operation{Name: "createWebhookSubscription", Method: http.MethodPost, Path: "/v1/webhooks/subscriptions", Idempotency: transport.IdempotencyUnsupported, SuccessStatuses: []int{201}}
-	deleteWebhookSubscriptionOperation       = transport.Operation{Name: "deleteWebhookSubscription", Method: http.MethodDelete, Path: "/v1/webhooks/subscriptions/{id}", Idempotency: transport.IdempotencyUnsupported, SuccessStatuses: []int{200}}
-	getInboundEndpointOperation              = transport.Operation{Name: "getInboundEndpoint", Method: http.MethodGet, Path: "/v1/webhooks/inbound-endpoints/{id}", Idempotency: transport.IdempotencyNotApplicable, SuccessStatuses: []int{200}}
-	getWebhookSubscriptionOperation          = transport.Operation{Name: "getWebhookSubscription", Method: http.MethodGet, Path: "/v1/webhooks/subscriptions/{id}", Idempotency: transport.IdempotencyNotApplicable, SuccessStatuses: []int{200}}
-	getWebhookSubscriptionHealthOperation    = transport.Operation{Name: "getWebhookSubscriptionHealth", Method: http.MethodGet, Path: "/v1/webhooks/subscriptions/{id}/health", Idempotency: transport.IdempotencyNotApplicable, SuccessStatuses: []int{200}}
-	listInboundEndpointsOperation            = transport.Operation{Name: "listInboundEndpoints", Method: http.MethodGet, Path: "/v1/webhooks/inbound-endpoints", Idempotency: transport.IdempotencyNotApplicable, SuccessStatuses: []int{200}}
-	listWebhookDeliveriesOperation           = transport.Operation{Name: "listWebhookDeliveries", Method: http.MethodGet, Path: "/v1/webhooks/subscriptions/{subscription_id}/deliveries", Idempotency: transport.IdempotencyNotApplicable, SuccessStatuses: []int{200}}
-	listWebhookSubscriptionsOperation        = transport.Operation{Name: "listWebhookSubscriptions", Method: http.MethodGet, Path: "/v1/webhooks/subscriptions", Idempotency: transport.IdempotencyNotApplicable, SuccessStatuses: []int{200}}
-	patchWebhookSubscriptionOperation        = transport.Operation{Name: "patchWebhookSubscription", Method: http.MethodPatch, Path: "/v1/webhooks/subscriptions/{id}", Idempotency: transport.IdempotencyUnsupported, SuccessStatuses: []int{200}}
-	publishWebhookEventOperation             = transport.Operation{Name: "publishWebhookEvent", Method: http.MethodPost, Path: "/v1/webhooks/events", Idempotency: transport.IdempotencyRequestField, SuccessStatuses: []int{202}}
+	bulkReplayWebhookDeliveriesOperation  = transport.Operation{Name: "bulkReplayWebhookDeliveries", Method: http.MethodPost, Path: "/v1/webhooks/bulk-replay", Idempotency: transport.IdempotencyUnsupported, SuccessStatuses: []int{202}}
+	createInboundEndpointOperation        = transport.Operation{Name: "createInboundEndpoint", Method: http.MethodPost, Path: "/v1/webhooks/inbound-endpoints", Idempotency: transport.IdempotencyUnsupported, SuccessStatuses: []int{201}}
+	createWebhookSubscriptionOperation    = transport.Operation{Name: "createWebhookSubscription", Method: http.MethodPost, Path: "/v1/webhooks/subscriptions", Idempotency: transport.IdempotencyUnsupported, SuccessStatuses: []int{201}}
+	deleteWebhookSubscriptionOperation    = transport.Operation{Name: "deleteWebhookSubscription", Method: http.MethodDelete, Path: "/v1/webhooks/subscriptions/{id}", Idempotency: transport.IdempotencyUnsupported, SuccessStatuses: []int{200}}
+	getInboundEndpointOperation           = transport.Operation{Name: "getInboundEndpoint", Method: http.MethodGet, Path: "/v1/webhooks/inbound-endpoints/{id}", Idempotency: transport.IdempotencyNotApplicable, SuccessStatuses: []int{200}}
+	getWebhookSubscriptionOperation       = transport.Operation{Name: "getWebhookSubscription", Method: http.MethodGet, Path: "/v1/webhooks/subscriptions/{id}", Idempotency: transport.IdempotencyNotApplicable, SuccessStatuses: []int{200}}
+	getWebhookSubscriptionHealthOperation = transport.Operation{Name: "getWebhookSubscriptionHealth", Method: http.MethodGet, Path: "/v1/webhooks/subscriptions/{id}/health", Idempotency: transport.IdempotencyNotApplicable, SuccessStatuses: []int{200}}
+	listInboundEndpointsOperation         = transport.Operation{Name: "listInboundEndpoints", Method: http.MethodGet, Path: "/v1/webhooks/inbound-endpoints", Idempotency: transport.IdempotencyNotApplicable, SuccessStatuses: []int{200}}
+	listWebhookDeliveriesOperation        = transport.Operation{Name: "listWebhookDeliveries", Method: http.MethodGet, Path: "/v1/webhooks/subscriptions/{subscription_id}/deliveries", Idempotency: transport.IdempotencyNotApplicable, SuccessStatuses: []int{200}}
+	listWebhookSubscriptionsOperation     = transport.Operation{Name: "listWebhookSubscriptions", Method: http.MethodGet, Path: "/v1/webhooks/subscriptions", Idempotency: transport.IdempotencyNotApplicable, SuccessStatuses: []int{200}}
+	patchWebhookSubscriptionOperation     = transport.Operation{Name: "patchWebhookSubscription", Method: http.MethodPatch, Path: "/v1/webhooks/subscriptions/{id}", Idempotency: transport.IdempotencyUnsupported, SuccessStatuses: []int{200}}
+	publishWebhookEventOperation          = transport.Operation{Name: "publishWebhookEvent", Method: http.MethodPost, Path: "/v1/webhooks/events", Idempotency: transport.IdempotencyRequestField, SuccessStatuses: []int{202}, RequestRetrySafe: func(body any) bool {
+		request, ok := body.(PublishEventRequest)
+		return ok && request.IdempotencyKey != nil && strings.TrimSpace(string(*request.IdempotencyKey)) != ""
+	}}
 	replaceWebhookSubscriptionOperation      = transport.Operation{Name: "replaceWebhookSubscription", Method: http.MethodPut, Path: "/v1/webhooks/subscriptions/{id}", Idempotency: transport.IdempotencyUnsupported, SuccessStatuses: []int{200}}
 	replayInboundEventOperation              = transport.Operation{Name: "replayInboundEvent", Method: http.MethodPost, Path: "/v1/webhooks/inbound-events/{id}/replay", Idempotency: transport.IdempotencyUnsupported, SuccessStatuses: []int{200, 202}}
 	replayWebhookDeliveryOperation           = transport.Operation{Name: "replayWebhookDelivery", Method: http.MethodPost, Path: "/v1/webhooks/deliveries/{id}/replay", Idempotency: transport.IdempotencyUnsupported, SuccessStatuses: []int{200}}

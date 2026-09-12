@@ -31,9 +31,12 @@ type Config struct {
 	BaseURL    string
 	HTTPClient *http.Client
 	Timeout    time.Duration
+	// MaxRetries defaults to 2 when zero. Negative values are invalid.
 	MaxRetries int
-	UserAgent  string
-	OnRetry    func(aether.RetryEvent)
+	// DisableRetries takes precedence over a non-negative MaxRetries value.
+	DisableRetries bool
+	UserAgent      string
+	OnRetry        func(aether.RetryEvent)
 }
 
 type Client struct {
@@ -63,6 +66,9 @@ func NewClient(config Config) (*Client, error) {
 	}
 	if maxRetries < 0 {
 		return nil, fmt.Errorf("identity: maximum retries must not be negative")
+	}
+	if config.DisableRetries {
+		maxRetries = 0
 	}
 	httpClient := config.HTTPClient
 	if httpClient == nil {

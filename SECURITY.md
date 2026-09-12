@@ -2,7 +2,7 @@
 
 Do not report suspected vulnerabilities through a public GitHub issue.
 
-Email `security@useather.co` with the affected version, reproduction details,
+Email `security@useaether.co` with the affected version, reproduction details,
 and potential impact. Never include live credentials, access tokens, private
 keys, or personal data.
 
