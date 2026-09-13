@@ -2,7 +2,7 @@
 
 All notable customer-visible changes are recorded here.
 
-## Unreleased
+## [0.1.0-beta.1.2](https://github.com/aetherplatform/aether-go/compare/v0.1.0-beta.1...v0.1.0-beta.1.2) (2026-09-13)
 
 ### Added
 
@@ -20,9 +20,12 @@ All notable customer-visible changes are recorded here.
   Sensitive request/response details, transport causes and untrusted error
   metadata are omitted from authentication errors; retry timing is retained.
 
-Release preparation follows the existing release-please prerelease workflow.
-Existing versions and tags remain immutable. Publication and hosted email/SMS
-verification require separate release/environment checks.
+### Release
+
+- Preserve Go module tags as `v<version>` and synchronize the SDK user-agent
+  version with the release manifest.
+- Controlled sandbox email acceptance passed public/custom, confidential/custom
+  and hosted browser denial/approval. SMS provider delivery remains unverified.
 
 ## 0.1.0-beta.1
 
