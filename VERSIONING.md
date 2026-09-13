@@ -40,6 +40,10 @@ v0.1.0
 v1.0.0
 ```
 
+The maintainer selected `v0.1.0-beta.1.2` for the passwordless SDK update,
+keeping it on the existing beta.1 line. This is a prepared target; the current
+published version remains `v0.1.0-beta.1` until the protected release succeeds.
+
 Every customer-visible change updates the changelog. Preview releases may
 change incompatibly, but breaking changes require migration guidance. Stable
 deprecation windows and supported-version commitments are published before
