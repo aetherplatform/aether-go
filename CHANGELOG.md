@@ -2,6 +2,28 @@
 
 All notable customer-visible changes are recorded here.
 
+## Unreleased
+
+### Added
+
+- Typed email/SMS passwordless start, verification and approved custom completion
+  for public and confidential clients, with explicit authorization/hosted/custom
+  outcomes generated from the canonical Identity contract.
+- Secretless public-client authorization-code exchange, refresh rotation and
+  token revocation, plus secure S256 PKCE and strict callback/state helpers.
+- Identity operation metadata and payload generation, public package consumers,
+  and browser compilation coverage for the new flow.
+
+### Security
+
+- Authentication mutations never retry automatically or follow HTTP redirects.
+  Sensitive request/response details, transport causes and untrusted error
+  metadata are omitted from authentication errors; retry timing is retained.
+
+Release preparation follows the existing release-please prerelease workflow.
+Existing versions and tags remain immutable. Publication and hosted email/SMS
+verification require separate release/environment checks.
+
 ## 0.1.0-beta.1
 
 Published 2026-09-12 as `v0.1.0-beta.1`.

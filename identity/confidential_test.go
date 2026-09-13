@@ -101,3 +101,38 @@ func TestOAuthGrantForms(t *testing.T) {
 		})
 	}
 }
+
+func TestConfidentialPasswordlessUsesBasicAndRegisteredClient(t *testing.T) {
+	t.Parallel()
+	count := 0
+	client, err := NewConfidentialClient(ConfidentialConfig{Config: Config{BaseURL: "https://auth.example", HTTPClient: &http.Client{Transport: roundTripFunc(func(request *http.Request) (*http.Response, error) {
+		count++
+		id, secret, ok := request.BasicAuth()
+		if !ok || id != "client" || secret != "secret" {
+			t.Fatal("missing registered credentials")
+		}
+		switch request.URL.Path {
+		case "/v1/passwordless/start":
+			return identityResponse(202, `{"transaction":"transaction","challenge_id":"challenge","expires_in":300,"resend_after":60,"transaction_expires_in":600}`), nil
+		case "/v1/passwordless/verify":
+			return identityResponse(200, `{"status":"authorized","code":"code","state":null}`), nil
+		default:
+			return identityResponse(200, `{"status":"denied","error":"access_denied","state":null}`), nil
+		}
+	})}}, ClientID: "client", ClientSecret: "secret"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := client.StartPasswordless(context.Background(), startRequest()); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := client.VerifyPasswordless(context.Background(), verifyRequest()); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := client.CompletePasswordless(context.Background(), completeRequest()); err != nil {
+		t.Fatal(err)
+	}
+	if count != 3 {
+		t.Fatal("unexpected retry")
+	}
+}

@@ -71,6 +71,17 @@ func main() {
 }
 
 func newGenerator(platform string, contract document) *generator {
+	if platform == "identity" {
+		complete := contract.Components.Schemas["PasswordlessCompleteRequest"]
+		if properties, ok := complete["properties"].(map[string]any); ok {
+			for field, name := range map[string]string{"consent": "PasswordlessRegistrationConsent", "profile": "PasswordlessRegistrationProfile"} {
+				if value, ok := properties[field].(map[string]any); ok {
+					contract.Components.Schemas[name] = value
+				}
+			}
+		}
+	}
+
 	named := make(map[string]string)
 	names := sortedKeys(contract.Components.Schemas)
 	for _, name := range names {
@@ -90,6 +101,9 @@ func newGenerator(platform string, contract document) *generator {
 }
 
 func (generator *generator) generate() ([]byte, error) {
+	if generator.platform == "identity" {
+		return generator.generateIdentity()
+	}
 	operations, err := generator.operations()
 	if err != nil {
 		return nil, err
@@ -465,7 +479,15 @@ func (generator *generator) goType(value schema, contextName, currentName string
 		return name, isNullable(value), nil
 	}
 	if _, ok := value["const"]; ok {
-		return "string", false, nil
+		typeName, _ := schemaTypeName(value)
+		switch typeName {
+		case "integer":
+			return "int64", false, nil
+		case "boolean":
+			return "bool", false, nil
+		default:
+			return "string", false, nil
+		}
 	}
 	if variants, ok := value["oneOf"].([]any); ok {
 		return generator.nullableVariant(variants, contextName, currentName)

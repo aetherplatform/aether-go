@@ -7,7 +7,7 @@ AETHER_ROOT="$(cd "${SDK_ROOT}/../.." && pwd)"
 work_dir="$(mktemp -d "${TMPDIR:-/tmp}/aether-go-sdk-openapi.XXXXXX")"
 trap 'rm -rf "${work_dir}"' EXIT
 
-for platform in events notifications storage webhooks; do
+for platform in events identity notifications storage webhooks; do
   temporary="${work_dir}/${platform}.go"
   contract="${SDK_ROOT}/contracts/openapi/${platform}.json"
   if [[ ! -f "${contract}" ]]; then
