@@ -4,15 +4,17 @@ The Aether Go SDK provides typed access to Aether's public APIs. The first
 public beta contains the shared Core runtime plus the approved Identity,
 Events, Notifications, Storage, and Webhooks public contracts.
 
-The first public preview is available as the immutable `v0.1.0-beta.1` tag:
+The passwordless public preview uses the immutable `v0.1.0-beta.1.2` release tag:
 
 ```bash
-go get github.com/aetherplatform/aether-go@v0.1.0-beta.1
+go get github.com/aetherplatform/aether-go@v0.1.0-beta.1.2
 ```
 
-Passwordless support on this branch is an unreleased beta candidate. Its API
-requires an enabled registered client and configured delivery. Do not assume the
-currently published package or hosted environments include these endpoints.
+Passwordless requires an enabled registered client and configured delivery.
+Controlled sandbox email acceptance covers public and confidential clients,
+custom completion, and hosted browser approval/denial. SMS API support is
+included; real SMS delivery still requires a configured provider and acceptance.
+The earlier `v0.1.0-beta.1` tag remains immutable and lacks these passwordless methods.
 
 Go resolves the module through its module proxy or Git repository and records
 its version and checksums in your project. No npm account or npm package is
