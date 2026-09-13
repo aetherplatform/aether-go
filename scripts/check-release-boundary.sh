@@ -26,7 +26,7 @@ for platform in events notifications storage webhooks; do
   fi
 done
 
-for operation in AuthorizationURL GetOpenIDConfiguration GetOAuthJWKS ListOAuthScopes GetUserInfo ExchangeOAuthToken RevokeOAuthToken IntrospectOAuthToken; do
+for operation in StartPasswordless VerifyPasswordless CompletePasswordless GeneratePKCE ValidateOAuthCallback AuthorizationURL GetOpenIDConfiguration GetOAuthJWKS ListOAuthScopes GetUserInfo ExchangeOAuthToken RevokeOAuthToken IntrospectOAuthToken; do
   if ! grep -R -Fq " ${operation}(" "${SDK_ROOT}/identity"; then
     echo "missing public Identity operation ${operation}" >&2
     exit 1

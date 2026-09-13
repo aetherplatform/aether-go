@@ -60,6 +60,8 @@ func TestMultipartUploadBoundsConcurrencyAndPreservesETags(t *testing.T) {
 	t.Parallel()
 	var active atomic.Int64
 	var maximum atomic.Int64
+	var started atomic.Int64
+	concurrent := make(chan struct{})
 	var mu sync.Mutex
 	uploaded := make(map[string]string)
 	httpClient := &http.Client{Transport: roundTripFunc(func(request *http.Request) (*http.Response, error) {
@@ -67,25 +69,36 @@ func TestMultipartUploadBoundsConcurrencyAndPreservesETags(t *testing.T) {
 			t.Errorf("Aether credential headers reached provider")
 		}
 		current := active.Add(1)
+		defer active.Add(-1)
 		for {
 			observed := maximum.Load()
 			if current <= observed || maximum.CompareAndSwap(observed, current) {
 				break
 			}
 		}
-		time.Sleep(5 * time.Millisecond)
+		// Keep the first request active until a second worker has entered.
+		// A sleep makes overlap depend on the scheduler's timing under load.
+		if started.Add(1) == 2 {
+			close(concurrent)
+		}
+		select {
+		case <-concurrent:
+		case <-request.Context().Done():
+			return nil, request.Context().Err()
+		}
 		body, _ := io.ReadAll(request.Body)
 		mu.Lock()
 		uploaded[request.URL.Path] = string(body)
 		mu.Unlock()
-		active.Add(-1)
 		part := strings.TrimPrefix(request.URL.Path, "/part/")
 		header := make(http.Header)
 		header.Set("etag", `"etag-`+part+`"`)
 		return &http.Response{StatusCode: http.StatusOK, Header: header, Body: io.NopCloser(strings.NewReader(""))}, nil
 	})}
 	intent := multipartIntent()
-	parts, err := UploadMultipart(context.Background(), intent, bytes.NewReader([]byte("abcdefgh")), 8, MultipartUploadOptions{Concurrency: 2, HTTPClient: httpClient})
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	parts, err := UploadMultipart(ctx, intent, bytes.NewReader([]byte("abcdefgh")), 8, MultipartUploadOptions{Concurrency: 2, HTTPClient: httpClient})
 	if err != nil {
 		t.Fatal(err)
 	}

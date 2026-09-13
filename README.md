@@ -10,6 +10,10 @@ The first public preview is available as the immutable `v0.1.0-beta.1` tag:
 go get github.com/aetherplatform/aether-go@v0.1.0-beta.1
 ```
 
+Passwordless support on this branch is an unreleased beta candidate. Its API
+requires an enabled registered client and configured delivery. Do not assume the
+currently published package or hosted environments include these endpoints.
+
 Go resolves the module through its module proxy or Git repository and records
 its version and checksums in your project. No npm account or npm package is
 required.
@@ -22,8 +26,9 @@ patched Go toolchain.
 
 ## Packages
 
-- `identity` — OAuth/OIDC discovery, PKCE authorization URLs, userinfo, and
-  server-only confidential-client token, revocation, and introspection calls.
+- `identity` — public email/SMS passwordless, OAuth/OIDC discovery, S256 PKCE and
+  callback helpers, public-client exchange/refresh/revocation, userinfo, and
+  server-only confidential credentials and introspection.
 - `events` — three read-only catalog and governed-schema operations.
 - `notifications` — 29 customer-facing send, template, broadcast, campaign,
   analytics, and email-configuration operations.

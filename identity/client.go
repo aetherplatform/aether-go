@@ -24,10 +24,11 @@ const (
 	defaultMaxRetries = 2
 )
 
-var codeChallengePattern = regexp.MustCompile(`^[A-Za-z0-9_-]{43,128}$`)
 var codeVerifierPattern = regexp.MustCompile(`^[A-Za-z0-9._~-]{43,128}$`)
 
 type Config struct {
+	// ClientID identifies a registered public client for direct authentication.
+	ClientID   string
 	BaseURL    string
 	HTTPClient *http.Client
 	Timeout    time.Duration
@@ -40,6 +41,7 @@ type Config struct {
 }
 
 type Client struct {
+	clientID   string
 	baseURL    *url.URL
 	httpClient *http.Client
 	timeout    time.Duration
@@ -50,7 +52,7 @@ type Client struct {
 
 func NewClient(config Config) (*Client, error) {
 	baseURL, err := url.Parse(config.BaseURL)
-	if err != nil || baseURL.Scheme == "" || baseURL.Host == "" || (baseURL.Scheme != "http" && baseURL.Scheme != "https") {
+	if err != nil || baseURL.User != nil || baseURL.RawQuery != "" || baseURL.Fragment != "" || baseURL.Scheme == "" || baseURL.Host == "" || (baseURL.Scheme != "http" && baseURL.Scheme != "https") {
 		return nil, fmt.Errorf("identity: base URL must be an absolute HTTP URL")
 	}
 	timeout := config.Timeout
@@ -78,19 +80,19 @@ func NewClient(config Config) (*Client, error) {
 	if userAgent == "" {
 		userAgent = "aether-go/" + aether.Version
 	}
-	return &Client{baseURL: baseURL, httpClient: httpClient, timeout: timeout, maxRetries: maxRetries, userAgent: userAgent, onRetry: config.OnRetry}, nil
+	return &Client{clientID: strings.TrimSpace(config.ClientID), baseURL: baseURL, httpClient: httpClient, timeout: timeout, maxRetries: maxRetries, userAgent: userAgent, onRetry: config.OnRetry}, nil
 }
 
 func (client *Client) AuthorizationURL(request AuthorizationRequest) (string, error) {
 	if strings.TrimSpace(request.ClientID) == "" || strings.TrimSpace(request.Scope) == "" || strings.TrimSpace(request.State) == "" {
 		return "", fmt.Errorf("identity: client ID, scope, and state are required")
 	}
-	redirectURI, err := url.Parse(request.RedirectURI)
-	if err != nil || redirectURI.Scheme == "" {
+	_, err := validateRedirectURI(request.RedirectURI)
+	if err != nil {
 		return "", fmt.Errorf("identity: redirect URI must be absolute")
 	}
-	if !codeChallengePattern.MatchString(request.CodeChallenge) {
-		return "", fmt.Errorf("identity: code challenge must be 43 to 128 base64url characters")
+	if !s256Pattern.MatchString(request.CodeChallenge) {
+		return "", fmt.Errorf("identity: S256 code challenge must be 43 base64url characters")
 	}
 	target := client.baseURL.ResolveReference(&url.URL{Path: "/oauth/authorize"})
 	query := target.Query()
@@ -163,12 +165,30 @@ func (client *Client) GetUserInfo(ctx context.Context, tokenProvider aether.Toke
 }
 
 type requestAuth struct {
+	publicID    string
 	bearer      string
 	basicID     string
 	basicSecret string
 }
 
 func (client *Client) do(ctx context.Context, operation, method, path string, form url.Values, auth requestAuth, result any, retrySafe bool, requestOptions ...aether.RequestOption) error {
+	encodedForm := ""
+	if form != nil {
+		encodedForm = form.Encode()
+	}
+	contentType := ""
+	if form != nil {
+		contentType = "application/x-www-form-urlencoded"
+	}
+	return client.doBody(ctx, operation, method, path, []byte(encodedForm), contentType, auth, result, retrySafe, requestOptions...)
+}
+
+func (client *Client) doBody(ctx context.Context, operation, method, path string, encodedBody []byte, contentType string, auth requestAuth, result any, retrySafe bool, requestOptions ...aether.RequestOption) (returned error) {
+	defer func() {
+		if method == http.MethodPost || auth.bearer != "" {
+			returned = sanitizeConfidentialError(returned)
+		}
+	}()
 	if ctx == nil {
 		return fmt.Errorf("identity: context is required")
 	}
@@ -177,9 +197,21 @@ func (client *Client) do(ctx context.Context, operation, method, path string, fo
 		metadata.RequestID = randomRequestID()
 	}
 	target := client.baseURL.ResolveReference(&url.URL{Path: path})
-	encodedForm := ""
-	if form != nil {
-		encodedForm = form.Encode()
+	publicID := auth.publicID
+	if publicID == "" {
+		publicID = client.clientID
+	}
+	if (method == http.MethodPost || path == "/oauth/userinfo") && publicID != "" {
+		query := target.Query()
+		query.Set("client_id", publicID)
+		target.RawQuery = query.Encode()
+	}
+	// Credentials and one-use grants must never follow redirects or leak through
+	// error causes supplied by custom transports or a misconfigured upstream.
+	sensitive := method == http.MethodPost || auth.bearer != ""
+	httpClient := *client.httpClient
+	if sensitive {
+		httpClient.CheckRedirect = func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }
 	}
 	for attempt := 1; ; attempt++ {
 		if err := ctx.Err(); err != nil {
@@ -187,8 +219,8 @@ func (client *Client) do(ctx context.Context, operation, method, path string, fo
 		}
 		requestContext, cancel := context.WithTimeout(ctx, client.timeout)
 		var body io.Reader
-		if form != nil {
-			body = bytes.NewBufferString(encodedForm)
+		if contentType != "" {
+			body = bytes.NewReader(encodedBody)
 		}
 		request, err := http.NewRequestWithContext(requestContext, method, target.String(), body)
 		if err != nil {
@@ -203,8 +235,8 @@ func (client *Client) do(ctx context.Context, operation, method, path string, fo
 		if metadata.CorrelationID != "" {
 			request.Header.Set("x-correlation-id", metadata.CorrelationID)
 		}
-		if form != nil {
-			request.Header.Set("content-type", "application/x-www-form-urlencoded")
+		if contentType != "" {
+			request.Header.Set("content-type", contentType)
 		}
 		if auth.bearer != "" {
 			request.Header.Set("authorization", "Bearer "+auth.bearer)
@@ -212,7 +244,7 @@ func (client *Client) do(ctx context.Context, operation, method, path string, fo
 		if auth.basicID != "" {
 			request.SetBasicAuth(auth.basicID, auth.basicSecret)
 		}
-		response, sendErr := client.httpClient.Do(request)
+		response, sendErr := httpClient.Do(request)
 		requestTimedOut := errors.Is(requestContext.Err(), context.DeadlineExceeded)
 		if sendErr != nil {
 			cancel()
@@ -244,6 +276,9 @@ func (client *Client) do(ctx context.Context, operation, method, path string, fo
 			return &aether.Error{StatusCode: response.StatusCode, Code: "response_read_failed", Message: "Failed to read Identity response", Attempts: attempt, Cause: readErr}
 		}
 		if response.StatusCode >= 200 && response.StatusCode < 300 {
+			if !validOperationStatus(operation, response.StatusCode) {
+				return invalidIdentityResponse("operation status")
+			}
 			if result == nil || len(responseBody) == 0 {
 				return nil
 			}
@@ -253,6 +288,9 @@ func (client *Client) do(ctx context.Context, operation, method, path string, fo
 			return nil
 		}
 		requestErr := transport.ErrorFromResponse(response, responseBody, attempt)
+		if sensitive {
+			requestErr = sanitizeConfidentialError(requestErr).(*aether.Error)
+		}
 		if !client.retry(ctx, operation, attempt, requestErr, retrySafe) {
 			if ctx.Err() != nil {
 				return &aether.Error{Code: "request_aborted", Message: "Identity request was aborted", Attempts: attempt, Cause: ctx.Err()}

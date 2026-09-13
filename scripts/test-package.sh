@@ -44,7 +44,14 @@ func main() {
 	_, _ = events.NewClient(aether.Config{BaseURL: "https://api.useather.test", TokenProvider: provider})
 	_, _ = notifications.NewClient(aether.Config{BaseURL: "https://api.useather.test", TokenProvider: provider})
 	_, _ = webhooks.NewClient(aether.Config{BaseURL: "https://api.useather.test", TokenProvider: provider})
-	identityClient, _ := identity.NewClient(identity.Config{BaseURL: "https://auth.useather.test"})
+	identityClient, _ := identity.NewClient(identity.Config{BaseURL: "https://auth.useather.test", ClientID: "client"})
+	proof, _ := identity.GeneratePKCE()
+	_, _ = identityClient.StartPasswordless(context.Background(), identity.PasswordlessStartRequest{Identifier: "person@example.test", Channel: identity.ChannelEmail, RedirectURI: "https://example.com/callback", CodeChallenge: proof.Challenge})
+	_, _ = identityClient.VerifyPasswordless(context.Background(), identity.PasswordlessVerifyRequest{Transaction: "transaction", ChallengeID: "challenge", Identifier: "person@example.test", Channel: identity.ChannelEmail, Code: "123456", CodeVerifier: proof.Verifier})
+	_, _ = identityClient.CompletePasswordless(context.Background(), identity.PasswordlessCompleteRequest{Continuation: "continuation", CodeVerifier: proof.Verifier, Decision: identity.DecisionDeny})
+	_, _ = identityClient.ExchangeOAuthToken(context.Background(), identity.TokenRequest{GrantType: identity.GrantAuthorizationCode, Code: "code", RedirectURI: "https://example.com/callback", CodeVerifier: proof.Verifier})
+	_ = identityClient.RevokeOAuthToken(context.Background(), identity.TokenHandleRequest{Token: "refresh"})
+	_, _ = identity.ValidateOAuthCallback("https://example.com/callback?code=code&state=state", "https://example.com/callback", "state")
 	_, _ = identityClient.AuthorizationURL(identity.AuthorizationRequest{ClientID: "client", RedirectURI: "https://example.com/callback", Scope: "openid", State: "state", CodeChallenge: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"})
 }
 EOF

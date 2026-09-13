@@ -5,7 +5,6 @@ package identity
 import (
 	"context"
 	"fmt"
-	"net/url"
 	"strings"
 
 	"github.com/aetherplatform/aether-go"
@@ -76,62 +75,14 @@ func (client *ConfidentialClient) auth() requestAuth {
 	return requestAuth{basicID: client.clientID, basicSecret: client.clientSecret}
 }
 
-func tokenRequestForm(request TokenRequest) (url.Values, []string, error) {
-	form := make(url.Values)
-	form.Set("grant_type", string(request.GrantType))
-	sensitive := []string{request.Code, request.CodeVerifier, request.RefreshToken}
-	switch request.GrantType {
-	case GrantAuthorizationCode:
-		if request.Code == "" || request.RedirectURI == "" || request.CodeVerifier == "" {
-			return nil, nil, fmt.Errorf("identity: authorization code, redirect URI, and code verifier are required")
-		}
-		if !codeVerifierPattern.MatchString(request.CodeVerifier) {
-			return nil, nil, fmt.Errorf("identity: code verifier must be 43 to 128 base64url characters")
-		}
-		form.Set("code", request.Code)
-		form.Set("redirect_uri", request.RedirectURI)
-		form.Set("code_verifier", request.CodeVerifier)
-	case GrantRefreshToken:
-		if request.RefreshToken == "" {
-			return nil, nil, fmt.Errorf("identity: refresh token is required")
-		}
-		form.Set("refresh_token", request.RefreshToken)
-	case GrantClientCredentials:
-		if request.Audience == "" || request.Scope == "" {
-			return nil, nil, fmt.Errorf("identity: audience and scope are required")
-		}
-		form.Set("audience", request.Audience)
-		form.Set("scope", request.Scope)
-	default:
-		return nil, nil, fmt.Errorf("identity: unsupported OAuth grant type")
-	}
-	return form, sensitive, nil
+func (client *ConfidentialClient) StartPasswordless(ctx context.Context, request PasswordlessStartRequest, options ...aether.RequestOption) (*PasswordlessStartResponse, error) {
+	return client.client.startPasswordless(ctx, request, client.auth(), options...)
 }
 
-func tokenHandleForm(request TokenHandleRequest) (url.Values, []string, error) {
-	if request.Token == "" {
-		return nil, nil, fmt.Errorf("identity: token is required")
-	}
-	form := url.Values{"token": {request.Token}}
-	if request.TokenTypeHint != "" {
-		form.Set("token_type_hint", request.TokenTypeHint)
-	}
-	return form, []string{request.Token}, nil
+func (client *ConfidentialClient) VerifyPasswordless(ctx context.Context, request PasswordlessVerifyRequest, options ...aether.RequestOption) (PasswordlessVerifyResponse, error) {
+	return client.client.verifyPasswordless(ctx, request, client.auth(), options...)
 }
 
-func sanitizeConfidentialError(err error, secrets ...string) error {
-	if err == nil {
-		return nil
-	}
-	requestErr, ok := err.(*aether.Error)
-	if !ok {
-		return err
-	}
-	for _, secret := range secrets {
-		if secret != "" {
-			requestErr.Message = strings.ReplaceAll(requestErr.Message, secret, "[REDACTED]")
-		}
-	}
-	requestErr.Details = nil
-	return requestErr
+func (client *ConfidentialClient) CompletePasswordless(ctx context.Context, request PasswordlessCompleteRequest, options ...aether.RequestOption) (PasswordlessCompleteResponse, error) {
+	return client.client.completePasswordless(ctx, request, client.auth(), options...)
 }

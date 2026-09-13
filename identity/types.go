@@ -63,6 +63,7 @@ func (info UserInfo) Subject() string {
 }
 
 type OpenIDConfiguration struct {
+	TokenEndpointAuthMethodsSupported []string `json:"token_endpoint_auth_methods_supported,omitempty"`
 	Issuer                            string   `json:"issuer"`
 	AuthorizationEndpoint             string   `json:"authorization_endpoint"`
 	TokenEndpoint                     string   `json:"token_endpoint"`
