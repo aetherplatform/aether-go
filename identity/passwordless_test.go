@@ -56,6 +56,31 @@ func TestPasswordlessStartSendsPublicJSONAndPreflightHint(t *testing.T) {
 	}
 }
 
+func TestPasswordlessStartAcceptsConfiguredResendIntervals(t *testing.T) {
+	t.Parallel()
+	for _, seconds := range []string{"1", "30", "60", "300", "0", "-1", "301", "1.5", `"30"`, "null"} {
+		t.Run(seconds, func(t *testing.T) {
+			calls := 0
+			client := publicTestClient(t, roundTripFunc(func(*http.Request) (*http.Response, error) {
+				calls++
+				return identityResponse(202, fmt.Sprintf(`{"transaction":"transaction","challenge_id":"challenge","expires_in":300,"resend_after":%s,"transaction_expires_in":600}`, seconds)), nil
+			}))
+			response, err := client.StartPasswordless(context.Background(), startRequest())
+			valid := seconds == "1" || seconds == "30" || seconds == "60" || seconds == "300"
+			if valid {
+				if err != nil || fmt.Sprint(response.ResendAfter) != seconds {
+					t.Fatalf("configured resend interval was not preserved: %v", err)
+				}
+			} else if err == nil {
+				t.Fatal("invalid resend interval was accepted")
+			}
+			if calls != 1 {
+				t.Fatalf("sending was retried: %d calls", calls)
+			}
+		})
+	}
+}
+
 func TestPasswordlessOutcomeTypesAndMalformedResponses(t *testing.T) {
 	t.Parallel()
 	tests := []struct {

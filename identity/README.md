@@ -71,7 +71,8 @@ memory by default; mobile applications can use secure application storage. The
 SDK does not persist tokens or transactions and never installs an SSO cookie.
 
 Codes expire after five minutes; transactions expire after ten minutes. Resend
-only after an explicit user action and the returned 60-second cooldown. Calling
+only after an explicit user action and the returned `ResendAfter` interval
+(60 seconds by default; the server can configure 1–300 seconds). Calling
 `StartPasswordless` again supersedes the earlier pending challenge. All sends,
 verification, completion, code exchange and refresh are single attempts; even a
 network interruption requires application reconciliation or a fresh user action.

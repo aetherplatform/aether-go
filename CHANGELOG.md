@@ -2,6 +2,15 @@
 
 All notable customer-visible changes are recorded here.
 
+## [0.1.0-beta.1.3](https://github.com/aetherplatform/aether-go/compare/v0.1.0-beta.1.2...v0.1.0-beta.1.3) (2026-09-14)
+
+### Fixed
+
+- Accept passwordless `ResendAfter` intervals from 1 to 300 seconds, including
+  the existing 60-second default, and reject responses outside the contract.
+- Document that applications honor the returned interval and that the cooldown
+  is configured by the Identity server operator rather than an SDK request.
+
 ## [0.1.0-beta.1.2](https://github.com/aetherplatform/aether-go/compare/v0.1.0-beta.1...v0.1.0-beta.1.2) (2026-09-13)
 
 ### Added

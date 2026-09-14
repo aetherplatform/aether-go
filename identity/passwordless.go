@@ -57,7 +57,7 @@ func (client *Client) startPasswordless(ctx context.Context, request Passwordles
 	if err := client.passwordlessJSON(ctx, startPasswordlessOperation, request, auth, &response, options...); err != nil {
 		return nil, err
 	}
-	if response.Transaction == "" || response.ChallengeID == "" || response.ExpiresIn != 300 || response.ResendAfter != 60 || response.TransactionExpiresIn != 600 {
+	if response.Transaction == "" || response.ChallengeID == "" || response.ExpiresIn != 300 || response.ResendAfter < 1 || response.ResendAfter > 300 || response.TransactionExpiresIn != 600 {
 		return nil, invalidIdentityResponse("passwordless start")
 	}
 	return &response, nil
