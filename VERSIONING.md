@@ -76,7 +76,7 @@ proof for its candidate.
 The current preview is installable with:
 
 ```bash
-go get github.com/aetherplatform/aether-go@v0.1.0-beta.1.2
+go get github.com/aetherplatform/aether-go@v0.1.0-beta.1.3
 ```
 
 After each release, a clean external project must fetch the exact new tag,
@@ -92,3 +92,14 @@ fetched the tag, verified checksums, compiled the public packages, and passed
 the five-platform hosted journey. Bootstrap is now disabled and the permanent
 release workflow is enabled; both retain the required reviewer. No npm package
 is required for Go.
+
+## Configurable resend release evidence
+
+`v0.1.0-beta.1.3` was published on 2026-09-14 from commit
+`eb2656f9e2730a939a72c454e34c60e770b67669` after the protected
+[release workflow](https://github.com/aetherplatform/aether-go/actions/runs/34840803955)
+passed certification and hosted five-platform proof. A clean external project
+fetched the exact version through `proxy.golang.org`, verified module checksums,
+compiled every public package, and verified `aether.Version`. This release adds
+acceptance of the server-configured 1–300 second resend interval; the server
+default remains 60 seconds.
