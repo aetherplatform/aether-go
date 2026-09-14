@@ -4,11 +4,15 @@ The Aether Go SDK provides typed access to Aether's public APIs. The first
 public beta contains the shared Core runtime plus the approved Identity,
 Events, Notifications, Storage, and Webhooks public contracts.
 
-The passwordless public preview uses the immutable `v0.1.0-beta.1.2` release tag:
+The current public preview uses the immutable `v0.1.0-beta.1.3` release tag:
 
 ```bash
-go get github.com/aetherplatform/aether-go@v0.1.0-beta.1.2
+go get github.com/aetherplatform/aether-go@v0.1.0-beta.1.3
 ```
+
+Beta.1.3 accepts server-configured passwordless resend intervals from 1 to 300
+seconds. Upgrade consuming applications before enabling a nondefault interval;
+the server default remains 60 seconds.
 
 Passwordless requires an enabled registered client and configured delivery.
 Controlled sandbox email acceptance covers public and confidential clients,
