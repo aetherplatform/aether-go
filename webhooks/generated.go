@@ -182,7 +182,7 @@ var (
 	}}
 	replaceWebhookSubscriptionOperation      = transport.Operation{Name: "replaceWebhookSubscription", Method: http.MethodPut, Path: "/v1/webhooks/subscriptions/{id}", Idempotency: transport.IdempotencyUnsupported, SuccessStatuses: []int{200}}
 	replayInboundEventOperation              = transport.Operation{Name: "replayInboundEvent", Method: http.MethodPost, Path: "/v1/webhooks/inbound-events/{id}/replay", Idempotency: transport.IdempotencyUnsupported, SuccessStatuses: []int{200, 202}}
-	replayWebhookDeliveryOperation           = transport.Operation{Name: "replayWebhookDelivery", Method: http.MethodPost, Path: "/v1/webhooks/deliveries/{id}/replay", Idempotency: transport.IdempotencyUnsupported, SuccessStatuses: []int{200}}
+	replayWebhookDeliveryOperation           = transport.Operation{Name: "replayWebhookDelivery", Method: http.MethodPost, Path: "/v1/webhooks/deliveries/{id}/replay", Idempotency: transport.IdempotencyUnsupported, SuccessStatuses: []int{202}}
 	rotateInboundEndpointSecretOperation     = transport.Operation{Name: "rotateInboundEndpointSecret", Method: http.MethodPost, Path: "/v1/webhooks/inbound-endpoints/{id}/rotate-secret", Idempotency: transport.IdempotencyUnsupported, SuccessStatuses: []int{200}}
 	rotateWebhookSubscriptionSecretOperation = transport.Operation{Name: "rotateWebhookSubscriptionSecret", Method: http.MethodPost, Path: "/v1/webhooks/subscriptions/{id}/rotate-secret", Idempotency: transport.IdempotencyUnsupported, SuccessStatuses: []int{200}}
 	setWebhookSubscriptionStatusOperation    = transport.Operation{Name: "setWebhookSubscriptionStatus", Method: http.MethodPut, Path: "/v1/webhooks/subscriptions/{id}/status", Idempotency: transport.IdempotencyUnsupported, SuccessStatuses: []int{200}}

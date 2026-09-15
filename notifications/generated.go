@@ -28,6 +28,22 @@ type QueuedNotification struct {
 	Status         string `json:"status"`
 }
 
+type RenderedTemplate struct {
+	Body         *string `json:"body,omitempty"`
+	Category     *string `json:"category,omitempty"`
+	EmailHtml    *string `json:"email_html,omitempty"`
+	EmailSubject *string `json:"email_subject,omitempty"`
+	EmailText    *string `json:"email_text,omitempty"`
+	InappBody    *string `json:"inapp_body,omitempty"`
+	InappTitle   *string `json:"inapp_title,omitempty"`
+	Locale       *string `json:"locale,omitempty"`
+	SmsBody      *string `json:"sms_body,omitempty"`
+	Source       *Source `json:"source,omitempty"`
+	Title        *string `json:"title,omitempty"`
+	Version      *int64  `json:"version,omitempty"`
+	WhatsappBody *string `json:"whatsapp_body,omitempty"`
+}
+
 type Resource struct {
 	ID string `json:"id"`
 }
@@ -53,19 +69,25 @@ type SendNotificationRequest struct {
 }
 
 type Template struct {
-	Category     *string `json:"category,omitempty"`
-	EmailHtml    *string `json:"email_html,omitempty"`
-	EmailSubject *string `json:"email_subject,omitempty"`
-	ID           string  `json:"id"`
-	IsActive     bool    `json:"is_active"`
-	Locale       *string `json:"locale,omitempty"`
-	Name         string  `json:"name"`
-	PushBody     *string `json:"push_body,omitempty"`
-	PushTitle    *string `json:"push_title,omitempty"`
-	Slug         string  `json:"slug"`
-	SmsBody      *string `json:"sms_body,omitempty"`
-	Type         *string `json:"type,omitempty"`
-	Version      *int64  `json:"version,omitempty"`
+	Category     *string    `json:"category,omitempty"`
+	CreatedAt    *time.Time `json:"created_at,omitempty"`
+	EmailHtml    *string    `json:"email_html,omitempty"`
+	EmailSubject *string    `json:"email_subject,omitempty"`
+	EmailText    *string    `json:"email_text,omitempty"`
+	ID           string     `json:"id"`
+	InappBody    *string    `json:"inapp_body,omitempty"`
+	InappTitle   *string    `json:"inapp_title,omitempty"`
+	IsActive     bool       `json:"is_active"`
+	Locale       *string    `json:"locale,omitempty"`
+	Name         string     `json:"name"`
+	PushBody     *string    `json:"push_body,omitempty"`
+	PushTitle    *string    `json:"push_title,omitempty"`
+	Slug         string     `json:"slug"`
+	SmsBody      *string    `json:"sms_body,omitempty"`
+	Type         *string    `json:"type,omitempty"`
+	UpdatedAt    *time.Time `json:"updated_at,omitempty"`
+	Version      *int64     `json:"version,omitempty"`
+	WhatsappBody *string    `json:"whatsapp_body,omitempty"`
 }
 
 type TemplateList struct {
@@ -73,35 +95,26 @@ type TemplateList struct {
 }
 
 type TemplatePreview struct {
-	EmailHtml    *string `json:"email_html,omitempty"`
-	EmailSubject *string `json:"email_subject,omitempty"`
-	Locale       *string `json:"locale,omitempty"`
-	PushBody     *string `json:"push_body,omitempty"`
-	PushTitle    *string `json:"push_title,omitempty"`
-	SmsBody      *string `json:"sms_body,omitempty"`
-	Version      *int64  `json:"version,omitempty"`
+	Locale   string           `json:"locale"`
+	Rendered RenderedTemplate `json:"rendered"`
+	Slug     string           `json:"slug"`
 }
 
 type TemplatePreviewRequest struct {
-	Category     *string     `json:"category,omitempty"`
-	EmailHtml    *string     `json:"email_html,omitempty"`
-	EmailSubject *string     `json:"email_subject,omitempty"`
-	Locale       *string     `json:"locale,omitempty"`
-	Name         string      `json:"name"`
-	PushBody     *string     `json:"push_body,omitempty"`
-	PushTitle    *string     `json:"push_title,omitempty"`
-	Slug         string      `json:"slug"`
-	SmsBody      *string     `json:"sms_body,omitempty"`
-	Type         *string     `json:"type,omitempty"`
-	Variables    *JsonObject `json:"variables,omitempty"`
-	Version      *int64      `json:"version,omitempty"`
+	Locale    *string     `json:"locale,omitempty"`
+	Slug      string      `json:"slug"`
+	Variables *JsonObject `json:"variables,omitempty"`
 }
 
 type TemplateTestRequest struct {
-	Channels  []string    `json:"channels"`
-	Locale    *string     `json:"locale,omitempty"`
-	UserID    string      `json:"user_id"`
-	Variables *JsonObject `json:"variables,omitempty"`
+	Channels    []ChannelsItem `json:"channels"`
+	DeviceToken *string        `json:"device_token,omitempty"`
+	Email       *string        `json:"email,omitempty"`
+	Locale      *string        `json:"locale,omitempty"`
+	Phone       *string        `json:"phone,omitempty"`
+	Platform    *string        `json:"platform,omitempty"`
+	UserID      string         `json:"user_id"`
+	Variables   *JsonObject    `json:"variables,omitempty"`
 }
 
 type TemplateVariables struct {
@@ -110,17 +123,22 @@ type TemplateVariables struct {
 }
 
 type TemplateWrite struct {
-	Category     *string `json:"category,omitempty"`
-	EmailHtml    *string `json:"email_html,omitempty"`
-	EmailSubject *string `json:"email_subject,omitempty"`
-	Locale       *string `json:"locale,omitempty"`
-	Name         string  `json:"name"`
-	PushBody     *string `json:"push_body,omitempty"`
-	PushTitle    *string `json:"push_title,omitempty"`
-	Slug         string  `json:"slug"`
-	SmsBody      *string `json:"sms_body,omitempty"`
-	Type         *string `json:"type,omitempty"`
-	Version      *int64  `json:"version,omitempty"`
+	Category     *string   `json:"category,omitempty"`
+	EmailHtml    *string   `json:"email_html,omitempty"`
+	EmailSubject *string   `json:"email_subject,omitempty"`
+	EmailText    *string   `json:"email_text,omitempty"`
+	InappBody    *string   `json:"inapp_body,omitempty"`
+	InappTitle   *string   `json:"inapp_title,omitempty"`
+	Locale       *string   `json:"locale,omitempty"`
+	Name         string    `json:"name"`
+	PushBody     *string   `json:"push_body,omitempty"`
+	PushTitle    *string   `json:"push_title,omitempty"`
+	Slug         string    `json:"slug"`
+	SmsBody      *string   `json:"sms_body,omitempty"`
+	Type         *string   `json:"type,omitempty"`
+	Variables    *[]string `json:"variables,omitempty"`
+	Version      *int64    `json:"version,omitempty"`
+	WhatsappBody *string   `json:"whatsapp_body,omitempty"`
 }
 
 type ChannelsItem string
@@ -130,6 +148,13 @@ const (
 	ChannelsItemSms   ChannelsItem = "sms"
 	ChannelsItemEmail ChannelsItem = "email"
 	ChannelsItemInApp ChannelsItem = "in_app"
+)
+
+type Source string
+
+const (
+	SourceDb      Source = "db"
+	SourceDefault Source = "default"
 )
 
 var (
@@ -158,7 +183,7 @@ var (
 	sendBroadcastOperation                   = transport.Operation{Name: "sendBroadcast", Method: http.MethodPost, Path: "/v1/notifications/broadcasts/{id}/send", Idempotency: transport.IdempotencyUnsupported, SuccessStatuses: []int{202}}
 	sendEmailOperation                       = transport.Operation{Name: "sendEmail", Method: http.MethodPost, Path: "/v1/notifications/email/send", Idempotency: transport.IdempotencyOptional, SuccessStatuses: []int{202}}
 	sendNotificationOperation                = transport.Operation{Name: "sendNotification", Method: http.MethodPost, Path: "/v1/notifications/messages", Idempotency: transport.IdempotencyUnsupported, SuccessStatuses: []int{202}}
-	testNotificationTemplateOperation        = transport.Operation{Name: "testNotificationTemplate", Method: http.MethodPost, Path: "/v1/notifications/templates/{slug}/test", Idempotency: transport.IdempotencyUnsupported, SuccessStatuses: []int{200}}
+	testNotificationTemplateOperation        = transport.Operation{Name: "testNotificationTemplate", Method: http.MethodPost, Path: "/v1/notifications/templates/{slug}/test", Idempotency: transport.IdempotencyUnsupported, SuccessStatuses: []int{200, 202}}
 	updateCampaignOperation                  = transport.Operation{Name: "updateCampaign", Method: http.MethodPatch, Path: "/v1/notifications/campaigns/{id}", Idempotency: transport.IdempotencyUnsupported, SuccessStatuses: []int{200}}
 	updateEmailConfigurationOperation        = transport.Operation{Name: "updateEmailConfiguration", Method: http.MethodPut, Path: "/v1/notifications/email/config", Idempotency: transport.IdempotencyUnsupported, SuccessStatuses: []int{200}}
 	updateNotificationTemplateOperation      = transport.Operation{Name: "updateNotificationTemplate", Method: http.MethodPut, Path: "/v1/notifications/templates/{id}", Idempotency: transport.IdempotencyUnsupported, SuccessStatuses: []int{200}}

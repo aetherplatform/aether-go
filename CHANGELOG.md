@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.0-beta.1.4](https://github.com/aetherplatform/aether-go/compare/v0.1.0-beta.1.3...v0.1.0-beta.1.4) (2026-09-15)
+
+### Bug Fixes
+
+- Accept durably queued webhook replay responses without repeating the request.
+- Correct Notifications template requests and nested preview response types.
+
 All notable customer-visible changes are recorded here.
 
 ## [0.1.0-beta.1.3](https://github.com/aetherplatform/aether-go/compare/v0.1.0-beta.1.2...v0.1.0-beta.1.3) (2026-09-14)

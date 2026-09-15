@@ -17,6 +17,7 @@ if [[ -n "$(find "${output}" -mindepth 1 -maxdepth 1 -print -quit)" ]]; then
 fi
 
 rsync -a \
+  --exclude .git \
   --exclude coverage.out \
   "${SDK_ROOT}/" "${output}/"
 
