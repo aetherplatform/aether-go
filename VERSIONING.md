@@ -62,8 +62,10 @@ component so Go receives `v<version>` tags. The annotated `version.go` constant
 is updated with the release manifest. Preserve these release-owned files when
 exporting new source. If repository policy prevents the Actions token from
 opening a PR, a maintainer opens the prepared release branch with the
-`autorelease: pending` label; review and the protected publishing gate still
-apply. The protected release workflow runs Go 1.27.1 certification and the hosted Identity, Events,
+`autorelease: pending` label. The branch must use Release Please's recognized
+`release-please--branches--main--components--aether-go` format; a normal feature
+branch is not recognized as a release even when its title and body are correct.
+Review and the protected publishing gate still apply. The protected release workflow runs Go 1.27.1 certification and the hosted Identity, Events,
 Notifications, Storage, and Webhooks proof before it may create later tags.
 The one-time bootstrap workflow created `v0.1.0-beta.1` with
 `AETHER_GO_SDK_BOOTSTRAP_RELEASE_ENABLED=true`. Bootstrap is now disabled and
@@ -76,7 +78,7 @@ proof for its candidate.
 The current preview is installable with:
 
 ```bash
-go get github.com/aetherplatform/aether-go@v0.1.0-beta.1.3
+go get github.com/aetherplatform/aether-go@v0.1.0-beta.1.4
 ```
 
 After each release, a clean external project must fetch the exact new tag,
